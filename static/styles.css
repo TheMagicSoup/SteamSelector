@@ -1,0 +1,37 @@
+.header{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family:'Courier New', Courier, monospace
+}
+
+.footer{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    padding-top:1%;
+    padding-bottom:1%;
+    text-align:center;
+    height:100%;
+}
+.steamprofileinput{
+    display:flex;
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
+    align-items: center;
+    justify-content: center;
+}
+#response{
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    margin-top:2%;
+}
+#footer{
+    font-family: 'Courier New', Courier, monospace;
+    position:absolute;
+    bottom:0;
+    width:100%;
+}
+#footer span{
+    height:100%;
+}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="resultscontainer">
+    <h2>Steam Profile Data for Steam ID: {{ steamID }}</h2>
+    {% if profile %}
+    <ul>
+        <li><strong>Persona Name:</strong> {{ profile.personaname }}</li>
+        <li><strong>Profile URL:</strong> <a href="{{ profile.profileurl }}" target="_blank">{{ profile.profileurl }}</a></li>
+        <li><strong>Avatar:</strong> <br><img src="{{ profile.avatarfull }}" alt="Avatar"></li>
+        <li><strong>Real Name:</strong> {{ profile.realname or 'N/A' }}</li>
+        <li><strong>Location:</strong> {{ profile.loccountrycode or 'N/A' }}</li>
+        <li><strong>Account Created:</strong> {{ profile.timecreated }}</li>
+    </ul>
+    {% else %}
+    <p>No profile data available.</p>
+    {% endif %}
+{% endblock content %}

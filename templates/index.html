@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="steamprofileinput">
+    <form action="/submit" method="POST">
+        <h2>Insert a Steam profile link or Steam profile ID.</h2>
+        <input type="text" name="steamInput" id="steamInput" placeholder="e.g., https://steamcommunity.com/id/username or 76561198000000000" style="width: 600px; height: 30px; font-size: 16px; margin-top: 10px;">
+        <button type="submit">Submit</button>
+    </form>
+</div>
+<div id="response">
+    <h3>{{ error }}</h3>
+</div>
+{% endblock content %}

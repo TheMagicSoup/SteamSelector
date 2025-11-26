@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SteamSelector</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/icon.png') }}">
+    </head>
+    <body>
+        <header>
+            <div class="header">
+                <a href="{{ url_for('index') }}">
+                    <img src="{{ url_for('static', filename='assets/icon.png') }}" alt="SteamSelector Icon" width="50" height="50" style="margin-right: 15px;">
+                </a>
+                <h1>SteamSelector</h1>
+            </div>
+        </header>
+        <main>
+        {% block content %}
+        {% endblock content %}
+        </main>
+        <footer id="footer">
+            <div class="footer">
+                <span>Copyright © 2024 SteamSelector - All Rights Reserved.</span>
+            </div>
+        </footer>
+    </body>
+</html>
