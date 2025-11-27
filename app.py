@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from functools import lru_cache
 from dotenv import load_dotenv
 import os
@@ -8,8 +8,8 @@ import re
 from pathlib import Path
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 
-lru_cache(maxsize=1024)
 CACHE_FILE = Path("vanity_cache.json")
 if CACHE_FILE.exists():
     with open(CACHE_FILE, "r") as f:
@@ -65,6 +65,16 @@ def getProfileData(steamID: str) -> dict | None:
         return response.get("response", {}).get("players", [])[0]
     except Exception:
         return None
+
+def getRecentlyPlayedGames(steamID: str) -> list | None:
+    url="https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/"
+    params={"key": _KEY, "steamid": steamID, "count": 4}
+    try:
+        response=requests.get(url, params=params).json()
+        return response.get("response", {}).get("games",[])
+    except Exception:
+        return None
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -80,8 +90,16 @@ def submit():
         if not sid:
             return render_template("badid.html")
     profileData=getProfileData(sid)
-    print(profileData)
-    return render_template("results.html", profile=profileData)
+    if not profileData:
+        return render_template("badid.html")
+    session["profileData"]=profileData
+    session["recentlyPlayedGames"]=getRecentlyPlayedGames(sid)
+    print(session["recentlyPlayedGames"])
+    return redirect(url_for("results"))
+
+@app.route("/results")
+def results():
+    return render_template("results.html", profile=session.get("profileData"), recentlyPlayedGames=session.get("recentlyPlayedGames"))
 
 if __name__ == "__main__":
     app.run(debug=True)

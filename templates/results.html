@@ -1,17 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="header">
+    <a href="{{ profile.profileurl }}"><h2>{{ profile.personaname }}</h2></a>
+</div>
 <div class="resultscontainer">
-    <h2>Steam Profile Data for Steam ID: {{ steamID }}</h2>
     {% if profile %}
-    <ul>
-        <li><strong>Persona Name:</strong> {{ profile.personaname }}</li>
-        <li><strong>Profile URL:</strong> <a href="{{ profile.profileurl }}" target="_blank">{{ profile.profileurl }}</a></li>
-        <li><strong>Avatar:</strong> <br><img src="{{ profile.avatarfull }}" alt="Avatar"></li>
-        <li><strong>Real Name:</strong> {{ profile.realname or 'N/A' }}</li>
-        <li><strong>Location:</strong> {{ profile.loccountrycode or 'N/A' }}</li>
-        <li><strong>Account Created:</strong> {{ profile.timecreated }}</li>
-    </ul>
+    <div class="resultspfpcolumn">
+        <img src="{{ profile.avatarfull }}" alt="Profile Avatar" class="results"/>
+    </div>
+    <div class="resultscontent">
+        <div class="results resultsheader">
+            <span><h3>{{ profile.personaname }}</h3></span>
+            <span><h3>Steam ID: {{ profile.steamid }}</h3></span>
+        </div>
+        <div class="results resultsbody">
+            <h3>Recently played games</h3>
+        </div>
+            {% for game in recentlyPlayedGames %}
+            <div class="resultsgamerow">
+                <div class="resultsbody">
+                    <img class="results" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{{ game.appid }}/capsule_231x87.jpg" alt="{{ game.name }} Logo">
+                </div>
+                <div>
+                    {{ game.name}}
+                </div>
+            </div>
+            {% endfor %}
+    </div>
     {% else %}
     <p>No profile data available.</p>
     {% endif %}
+</div>
 {% endblock content %}
