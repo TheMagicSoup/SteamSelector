@@ -47,7 +47,7 @@ main{
 .resultsbody{
     padding-left:2%;
     padding-right:2%;
-    margin-bottom:5%;
+    margin-bottom:2%;
     align-items: flex-start;
     width:90%;
 }
@@ -63,7 +63,7 @@ main{
     margin-bottom:2%;
     flex-basis:20%;
     flex-direction:column;
-    justify-content:top;
+    justify-content:start;
 }
 
 .resultscontent{
@@ -73,6 +73,7 @@ main{
     justify-content: center;
     height:100%;
     flex-basis:80%;
+    width:100%;
 }
 
 #response{
@@ -94,5 +95,16 @@ main{
 
 .resultsgamerow{
     display: flex;
-    flex-direction:row;
+    flex-direction:column;
+    width:100%;
+    justify-content:space-between;
+    flex-basis:25%;
+}
+
+.resultsrecentgames{
+    display:flex;
+    flex-flow:row;
+    width:90%;
+    justify-content:flex-start;
+    font-family:'Courier New', Courier, monospace;
 }

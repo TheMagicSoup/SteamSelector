@@ -13,19 +13,29 @@
             <span><h3>{{ profile.personaname }}</h3></span>
             <span><h3>Steam ID: {{ profile.steamid }}</h3></span>
         </div>
+        {% if recentlyPlayedGames %}
         <div class="results resultsbody">
             <h3>Recently played games</h3>
         </div>
+        <div class="resultsrecentgames">
             {% for game in recentlyPlayedGames %}
-            <div class="resultsgamerow">
-                <div class="resultsbody">
-                    <img class="results" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{{ game.appid }}/capsule_231x87.jpg" alt="{{ game.name }} Logo">
-                </div>
-                <div>
-                    {{ game.name}}
-                </div>
+            <div class="resultsgamerow resultsbody">
+
+                    <div class="resultsbody">
+                        {{ game.name}}
+                    </div>
+                    <img class="results" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{{ game.appid }}/capsule_231x87.jpg"
+                    alt="{{ game.name }} Logo"
+                    onerror="this.onerror=null; this.src='{{ url_for('static',filename='assets/assetnotfound.png') }}';"/>
+
             </div>
             {% endfor %}
+            </div>
+        {% else %}
+        <div class="results resultsbody">
+            <h3>No recently played games found.</h3>
+        </div>
+        {% endif %}
     </div>
     {% else %}
     <p>No profile data available.</p>
