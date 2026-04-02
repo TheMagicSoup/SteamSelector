@@ -1,3 +1,5 @@
 tempkey.txt
 .env
 vanity_cache.json
+model.pkl
+data/

@@ -1,19 +1,41 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 #from functools import lru_cache
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import linear_kernel
+from sklearn.preprocessing import normalize
 from dotenv import load_dotenv
 import pandas as pd
 import os
+import math
 import json
 import numpy as np
 import requests
 import re
-import numpy
 from pathlib import Path
+import pickle
+
+# Minimum number of owners for a game to be included in the dataset
+MIN_OWNERS = 30000
+# Weights for the categories involved in each game's document representation
+TAGS_WEIGHT=3
+GENRES_WEIGHT=2
+CATEGORIES_WEIGHT=1
+ABOUT_THE_GAME_WEIGHT=1
+# Number of recommendations returned
+TOP_N=5
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+
+user_cache={}
+
+with open("model.pkl","rb") as f:
+    model=pickle.load(f)
+
+df=model["df"]
+tfidf_matrix=model["tfidf_matrix"]
+cosine_sim=model["cosine_sim"]
+vectorizer=model["vectorizer"]
 
 CACHE_FILE = Path("vanity_cache.json")
 if CACHE_FILE.exists():
@@ -73,7 +95,7 @@ def getProfileData(steamID: str) -> dict | None:
 
 def getRecentlyPlayedGames(steamID: str) -> list | None:
     url="https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/"
-    params={"key": _KEY, "steamid": steamID, "count": 4}
+    params={"key": _KEY, "steamid": steamID}
     try:
         response=requests.get(url, params=params).json()
         return response.get("response", {}).get("games",[])
@@ -102,70 +124,42 @@ def getGameData(appid: str) -> list:
     except Exception:
         return []
 
-def build_tfidf_matrix(text_features, max_features=5000):
-    vectorizer=TfidfVectorizer(stop_words="english",max_features=max_features)
-    tfidf_matrix=vectorizer.fit_transform(text_features)
-    return tfidf_matrix, vectorizer
+def get_min_owners(c):
+    return int(c.split("-")[0])
 
-def build_appid_index(df):
-    return { appid: i  for i,appid in enumerate(df["appid"]) }
-
-def build_game_df(owned_games: list):
-    rows=[]
-    games=getTopGames(owned_games)
-    for game in games:
-        appid=game["appid"]
-        meta=getGameData(str(appid))
-        if not meta:
+def recommend(recent,owned,top_n=TOP_N):
+    user_vector=np.zeros(tfidf_matrix.shape[1])
+    for g in recent:
+        appid=g["appid"]
+        if appid not in appid_indices:
             continue
-        print(meta["name"])
-        rows.append({
-            "appid": appid,
-            "name": meta.get("name"),
-            "genres": meta.get("genre","").split(","),
-            "tags": meta.get("tags",{}).keys(),
-            "playtime_forever": game.get("playtime_forever",0),
-            "playtime_2weeks":game.get("playtime_2weeks",0)
+        idx=appid_indices[appid]
+        weight=math.log1p(g["playtime_2weeks"])
+        user_vector+=tfidf_matrix[idx].toarray().flatten()*weight
+    if np.all(user_vector==0):
+        return "No valid recently played games found."
+    user_vector=normalize(user_vector.reshape(1,-1))
+    sim_scores=linear_kernel(user_vector,tfidf_matrix).flatten()
+    top_indices=sim_scores.argsort()[::-1]
+    owned_appids=set(game["appid"] for game in owned)
+    results=[]
+    print("TOP CANDIDATES:")
+    for i in top_indices:
+        print(df.iloc[i]["Name"], df.iloc[i]["AppID"])
+        appid=df.iloc[i]["AppID"]
+        if appid in owned_appids:
+            continue
+        results.append({
+            "appid": int(appid),
+            "name": df.iloc[i]["Name"]
         })
-        df=pd.DataFrame(rows)
-        df["text_features"]=(
-            df["genres"].apply(" ".join)+" "+
-            df["tags"].apply(" ".join)
-        )
-    return df
+        if len(results)==top_n:
+            break
+    print(results)
+    return results
 
-def build_user_vector(df, tfidf_matrix, appid_to_index, owned_appids):
-    vectors=[]
-    for appid in owned_appids:
-        if appid in appid_to_index:
-            idx=appid_to_index[appid]
-            vectors.append(tfidf_matrix[idx])
-    if not vectors:
-        return None
-    
-    user_vector=np.mean(vectors, axis=0)
-    return user_vector
-
-def apply_playtime_weight(df, user_vector):
-    TOTAL_WEIGHT=0.7
-    RECENT_WEIGHT=0.3
-    weights=(
-        TOTAL_WEIGHT * df["playtime_forever"] +
-        RECENT_WEIGHT * df["playtime_2weeks"]
-    )
-    norm_weights = weights / (weights.max() + 1e-6)
-    weighted_vector = user_vector.multiply(norm_weights.mean())
-    return weighted_vector
-
-def compute_similarity(user_vector, tfidf_matrix):
-    similarities=cosine_similarity(user_vector, tfidf_matrix)
-    return similarities.flatten()
-
-def recommend(df, similarities, owned_appids, top_n=10):
-    df=df.copy()
-    df["similarity"]=similarities
-    recommendations=df[~df["appid"].isin(owned_appids)].sort_values(by="similarity",ascending=False).head(top_n)
-    return recommendations[["appid","name","similarity"]]
+# Creating a Series mapping AppIDs to indices
+appid_indices=pd.Series(df.index,index=df["AppID"]).drop_duplicates()
 
 @app.route("/")
 def index():
@@ -188,20 +182,33 @@ def submit():
     owned=getOwnedGames(sid)
     session["profileData"]=profileData
     session["recentlyPlayedGames"]=recent
-    owned_appids=[game["appid"] for game in owned]
-    df=build_game_df(owned)
-    tfidf_matrix, vectorizer=build_tfidf_matrix(df["text_features"])
-    appid_to_index=build_appid_index(df)
-    user_vector = build_user_vector(df, tfidf_matrix, appid_to_index, owned_appids)
-    user_vector = apply_playtime_weight(df, user_vector)
-    similarities = compute_similarity(user_vector, tfidf_matrix)
-    recommendations = recommend(df, similarities, owned_appids)
-    print(recommendations)
+    user_cache[sid]={
+        "steamid": sid,
+        "profile": profileData,
+        "recent": recent,
+        "owned": owned
+    }
     return redirect(url_for("results"))
+
+@app.route("/api/recommend")
+def api_recommend():
+    userid=session.get("profileData")["steamid"]
+
+    if not userid or userid not in user_cache:
+        return jsonify([])
+    
+    data = user_cache[userid]
+    recs=recommend(data["recent"],data["owned"])
+    return jsonify(recs)
+
 
 @app.route("/results")
 def results():
-    return render_template("results.html", profile=session.get("profileData"), recentlyPlayedGames=session.get("recentlyPlayedGames"))
+    userid=session.get("profileData")["steamid"]
+    if not userid or userid not in user_cache:
+        return redirect(url_for("index"))
+    data=user_cache[userid]
+    return render_template("results.html", profile=data["profile"], recentlyPlayedGames=data["recent"][:4])
  
 if __name__ == "__main__":
     app.run(debug=True)
