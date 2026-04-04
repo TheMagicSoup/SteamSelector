@@ -14,16 +14,11 @@ import re
 from pathlib import Path
 import pickle
 
-# Minimum number of owners for a game to be included in the dataset
-MIN_OWNERS = 30000
-# Weights for the categories involved in each game's document representation
-TAGS_WEIGHT=3
-GENRES_WEIGHT=2
-CATEGORIES_WEIGHT=1
-ABOUT_THE_GAME_WEIGHT=1
 # Number of recommendations returned
 TOP_N=5
-
+# Weights of owned and recent games
+OWNED_WEIGHT=0.8
+RECENT_WEIGHT=0.6
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
@@ -129,12 +124,21 @@ def get_min_owners(c):
 
 def recommend(recent,owned,top_n=TOP_N):
     user_vector=np.zeros(tfidf_matrix.shape[1])
+    for g in owned:
+        appid=g["appid"]
+        if appid not in appid_indices:
+            continue
+        idx=appid_indices[appid]
+        playtime=g.get("playtime_forever",0)
+        weight=OWNED_WEIGHT*math.log1p(playtime)
+        user_vector+=tfidf_matrix[idx].toarray().flatten()*weight
     for g in recent:
         appid=g["appid"]
         if appid not in appid_indices:
             continue
         idx=appid_indices[appid]
-        weight=math.log1p(g["playtime_2weeks"])
+        playtime=g.get("playtime_2weeks",0)
+        weight=RECENT_WEIGHT*math.log1p(playtime)
         user_vector+=tfidf_matrix[idx].toarray().flatten()*weight
     if np.all(user_vector==0):
         return "No valid recently played games found."
@@ -145,13 +149,22 @@ def recommend(recent,owned,top_n=TOP_N):
     results=[]
     print("TOP CANDIDATES:")
     for i in top_indices:
-        print(df.iloc[i]["Name"], df.iloc[i]["AppID"])
         appid=df.iloc[i]["AppID"]
+        name=df.iloc[i]["Name"]
+        desc=df.iloc[i]["About the game"]
+        print(desc)
+        if pd.isna(desc) or desc == "":
+            description="No description available (product potentially uses images/GIFs in liue of a text description)."
+        else:
+            description=desc[:600]+"..."
+        print(appid,name)
+
         if appid in owned_appids:
             continue
         results.append({
             "appid": int(appid),
-            "name": df.iloc[i]["Name"]
+            "name": name,
+            "description": description
         })
         if len(results)==top_n:
             break
@@ -192,11 +205,15 @@ def submit():
 
 @app.route("/api/recommend")
 def api_recommend():
-    userid=session.get("profileData")["steamid"]
+    profile=session.get("profileData")
+    if not profile:
+        return jsonify([])
+    
+    userid=profile["steamid"]
 
     if not userid or userid not in user_cache:
         return jsonify([])
-    
+
     data = user_cache[userid]
     recs=recommend(data["recent"],data["owned"])
     return jsonify(recs)
@@ -204,7 +221,10 @@ def api_recommend():
 
 @app.route("/results")
 def results():
-    userid=session.get("profileData")["steamid"]
+    profile=session.get("profileData")
+    if not profile:
+        return render_template("session_expired.html")
+    userid=profile["steamid"]
     if not userid or userid not in user_cache:
         return redirect(url_for("index"))
     data=user_cache[userid]

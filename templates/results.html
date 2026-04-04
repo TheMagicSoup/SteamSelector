@@ -24,10 +24,11 @@
                     <div class="resultsbody">
                         {{ game.name}}
                     </div>
-                    <img class="results" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{{ game.appid }}/capsule_231x87.jpg"
-                    alt="{{ game.name }} Logo"
-                    onerror="this.onerror=null; this.src='{{ url_for('static',filename='assets/assetnotfound.png') }}';"/>
-
+                    <a href="https://store.steampowered.com/app/{{ game.appid }}" target="_blank">
+                        <img class="results" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{{ game.appid }}/capsule_231x87.jpg"
+                        alt="{{ game.name }} Logo"
+                        onerror=" this.onerror=null; this.src='{{ url_for('static',filename='assets/assetnotfound.png') }}';"\>
+                    </a>
             </div>
             {% endfor %}
         </div>
@@ -37,8 +38,8 @@
         <div id="loading">
             <p>Loading recommendations...</p>
         </div>
-        <div id="recommendations">
-            
+        <div id="recommendations" class="resultsrecommendedgames">
+
         </div>
         {% else %}
         <div class="results resultsbody">

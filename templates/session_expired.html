@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="error" class="resultscontent">
+    The session has expired or no data has been provided.
+    <a href="{{ url_for('index') }}">Go back to the home page</a>
+</div>
+{% endblock content %}

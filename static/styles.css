@@ -46,7 +46,6 @@ main{
 
 .resultsbody{
     padding-left:2%;
-    padding-right:2%;
     margin-bottom:2%;
     align-items: flex-start;
     width:90%;
@@ -65,7 +64,10 @@ main{
     flex-direction:column;
     justify-content:start;
 }
-
+.resultspfpcolumn img{
+    width:75%;
+    height:auto;
+}
 .resultscontent{
     display:flex;
     flex-direction: column;
@@ -77,6 +79,12 @@ main{
 }
 
 #response{
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    margin-top:2%;
+}
+
+#error{
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
     margin-top:2%;
@@ -96,9 +104,7 @@ main{
 .resultsgamerow{
     display: flex;
     flex-direction:column;
-    width:100%;
     justify-content:space-between;
-    flex-basis:25%;
 }
 
 .resultsrecentgames{
@@ -107,4 +113,22 @@ main{
     width:90%;
     justify-content:flex-start;
     font-family:'Courier New', Courier, monospace;
+}
+
+.resultsrecommendedgames{
+    display:flex;
+    flex-flow:column;
+    width:90%;
+    justify-content:space-evenly;
+    font-family:'Courier New', Courier, monospace;
+    background-color:white;
+    border:2px solid black;
+    padding:1%;
+
+}
+
+.resultsrecommendedrow{
+    display: flex;
+    flex-direction:row;
+    justify-content:space-between;
 }
